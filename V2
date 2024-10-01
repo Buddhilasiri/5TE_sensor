@@ -1,0 +1,68 @@
+#include <SDISerial.h>
+
+#define DATA_LINE_PIN 8  // SDI-12 Data line connected to Digital Pin 5
+#define INVERTED true
+
+SDISerial sdiSerial(DATA_LINE_PIN, INVERTED);
+
+void setup() {
+  Serial.begin(9600);
+  sdiSerial.begin();
+  Serial.println("Initializing SDI-12 sensor...");
+  delay(1000); // Allow sensor to stabilize
+}
+
+void loop() {
+  // Send a command to take a measurement
+  sdiSerial.sdi_cmd("0M!");
+  delay(300); // Wait for the sensor to process the command
+
+  // Request data from the sensor
+  char* response = sdiSerial.sdi_query("0D0!", 3000);
+  if (response) {
+    Serial.println(response);
+    parseSensorData(response);
+  } else {
+    Serial.println("No response or timeout occurred.");
+  }
+
+  delay(5000); // Delay before the next measurement
+}
+
+void parseSensorData(char* data) {
+  // Convert char array to Arduino String for easier manipulation
+  String dataStr = String(data);
+
+  // Find the positions of '+' which delimits the data
+  int firstPlus = dataStr.indexOf('+');
+  int secondPlus = dataStr.lastIndexOf('+');
+
+  if (firstPlus != -1 && secondPlus != -1 && secondPlus > firstPlus) {
+    // Extract soil moisture and temperature from the data string
+    String soilMoisture = dataStr.substring(firstPlus + 1, secondPlus);
+    String temperature = dataStr.substring(secondPlus + 1);
+
+    // Print extracted values to Serial Monitor
+    Serial.print("Soil Moisture: ");
+    Serial.print(soilMoisture);
+    Serial.print(" VWC, Temperature: ");
+    Serial.print(temperature);
+    Serial.println(" C");
+  } else {
+    Serial.println("Failed to parse sensor data.");
+  }
+}
+
+//output
+/* 11:37:24.634 -> Soil Moisture: 1.03 VWC, Temperature: 21.7C
+11:37:30.226 -> 0+1.03+21.6
+11:37:30.226 -> Soil Moisture: 1.03 VWC, Temperature: 21.6C
+11:37:35.847 -> 0+1.03+21.6
+11:37:35.847 -> Soil Moisture: 1.03 VWC, Temperature: 21.6C
+11:37:41.482 -> 0+1.03+21.5
+11:37:41.482 -> Soil Moisture: 1.03 VWC, Temperature: 21.5C
+11:37:47.091 -> 0+1.03+21.4
+11:37:47.091 -> Soil Moisture: 1.03 VWC, Temperature: 21.4C
+11:37:52.684 -> 0+1.03+21.4
+11:37:52.730 -> Soil Moisture: 1.03 VWC, Temperature: 21.4C
+not calibrated*/
