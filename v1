@@ -1,0 +1,35 @@
+#include <SDI12.h>
+
+#define SDI12_DATA_PIN 8
+SDI12 mySDI12(SDI12_DATA_PIN);
+
+void setup() {
+  Serial.begin(9600);
+  mySDI12.begin();
+  Serial.println("Starting SDI-12 sensor communication");
+}
+
+void loop() {
+  String myCommand = "0I!";  // SDI-12 address 0, send identification command
+  mySDI12.sendCommand(myCommand);
+  delay(300); // wait a while for the sensor to respond
+
+  // Read the response from the sensor
+  String response = "";
+  while (mySDI12.available()) {
+    char c = mySDI12.read();
+    if (c != '\n') {
+      response += c;
+      delay(50); // let the buffer fill up
+    }
+  }
+  
+  Serial.println(response); // print the sensor identification
+  delay(2000); // wait two seconds before the next reading
+}
+//output
+//10:51:57.060 -> 0013DECAGON 5TM   400
+//10:51:57.060 -> Starting SDI-12 sensor communication
+//10:51:58.415 -> 013DECAGON 5TM   400
+//10:52:01.833 -> 013DECAGON 5TM   400
+
